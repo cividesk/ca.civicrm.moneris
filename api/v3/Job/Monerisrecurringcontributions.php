@@ -113,7 +113,7 @@ function civicrm_api3_job_monerisrecurringcontributions($params) {
   $dao = CRM_Core_DAO::executeQuery($update,$args);
 
   // Fourth, Update next sechudled date if empty and status is in-progress
-  $update = "SELECT cr.id, c.receive_date as 'latest_payment',
+  $update = "SELECT cr.id, c.receive_date as 'latest_payment', cr.start_date,
             CASE cr.frequency_unit
               WHEN 'year'  THEN DATE_ADD(c.receive_date, INTERVAL cr.frequency_interval YEAR)
               WHEN 'month' THEN DATE_ADD(c.receive_date, INTERVAL cr.frequency_interval MONTH)
@@ -122,7 +122,7 @@ function civicrm_api3_job_monerisrecurringcontributions($params) {
             END AS 'next_payment_date'
 
             FROM civicrm_contribution_recur cr 
-            INNER JOIN (select id, contribution_recur_id , max(receive_date) as 'receive_date' from civicrm_contribution where contribution_recur_id is not null group by contribution_recur_id )  c ON cr.id = c.contribution_recur_id 
+            LEFT JOIN (select id, contribution_recur_id , max(receive_date) as 'receive_date' from civicrm_contribution where contribution_recur_id is not null group by contribution_recur_id )  c ON cr.id = c.contribution_recur_id 
             INNER JOIN civicrm_payment_processor pp ON cr.payment_processor_id = pp.id 
             WHERE 
               (pp.class_name = %1)
@@ -134,7 +134,7 @@ function civicrm_api3_job_monerisrecurringcontributions($params) {
       ";
   $dao = CRM_Core_DAO::executeQuery($update, $args);
   while ($dao->fetch()) {
-    $nextPaymentDate = $dao->next_payment_date;
+    $nextPaymentDate = $dao->next_payment_date ? $dao->next_payment_date : $dao->start_date;
     if ($nextPaymentDate) {
       $updateDate = "UPDATE civicrm_contribution_recur SET next_sched_contribution_date = '{$nextPaymentDate}' WHERE id =". $dao->id;
       CRM_Core_DAO::executeQuery($updateDate);

@@ -17,7 +17,7 @@ return array (
       'api_entity' => 'Job',
       'api_action' => 'monerisrecurringcontributions',
       'parameters' => '',
-      'is_active' => 0,
+      'is_active' => 1,
     ),
   ),
 );
